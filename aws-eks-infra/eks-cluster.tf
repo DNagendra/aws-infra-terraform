@@ -1,26 +1,3 @@
-Skip to content
-Search or jump to…
-
-Pull requests
-Issues
-Marketplace
-Explore
- 
-@DNagendra 
-DNagendra
-/
-terraform-provider-aws
-forked from terraform-providers/terraform-provider-aws
-0
-0
-3.8k
- Code Pull requests 0 Actions Projects 0 Wiki Security Insights Settings
-terraform-provider-aws/examples/eks-getting-started/eks-cluster.tf
- dnagendra updated with new values
-134b28f 21 hours ago
-@bflad@anthonydahanne@rachlenko
-77 lines (66 sloc)  1.97 KB
-  
 #
 # EKS Cluster Resources
 #  * IAM Role to allow EKS service to manage other AWS services
