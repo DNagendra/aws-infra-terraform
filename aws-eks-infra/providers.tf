@@ -7,6 +7,14 @@ provider "aws" {
   version = ">= 2.38.0"
 }
 
+terraform {
+  backend "s3" {
+    bucket = "dev-infini-terraform-state"
+    key    = "terraform.tfstate"
+    region = "us-east-2"
+  }
+}
+
 # Using these data sources allows the configuration to be
 # generic for any region.
 data "aws_region" "current" {}
