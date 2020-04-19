@@ -1,0 +1,169 @@
+Create the VPC and EKS cluster using the Terraform scripts.
+
+Once we have the VPC and EKS cluster created follow the below steps to check the EKS cluster is configured properly.
+
+aws eks --region us-east-2 update-kubeconfig --name terraform-eks-cluster
+
+	C:\Users\nagen\Documents\NAGENDRA\git_code_base\InfiniAI\aws-infra-terraform\aws-eks-infra>aws eks --region us-east-2 update-kubeconfig --name terraform-eks-cluster
+	Updated context arn:aws:eks:us-east-2:622681710485:cluster/terraform-eks-cluster in C:\Users\nagen\.kube\config
+
+kubectl get nodes
+	
+		C:\Users\nagen\Documents\NAGENDRA\git_code_base\InfiniAI\aws-infra-terraform\aws-eks-infra>kubectl get nodes
+		NAME                                      STATUS    ROLES     AGE       VERSION
+		ip-10-0-0-17.us-east-2.compute.internal   Ready     <none>    2m        v1.15.10-eks-bac369
+		ip-10-0-1-45.us-east-2.compute.internal   Ready     <none>    2m        v1.15.10-eks-bac369
+	
+
+kubectl create deployment source-ip-app --image=k8s.gcr.io/echoserver:1.4
+
+kubectl get deployments
+
+		C:\Users\nagen\Documents\NAGENDRA\git_code_base\InfiniAI\aws-infra-terraform\aws-eks-infra>kubectl get deployments
+		NAME            DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+		source-ip-app   1         1         1            1           15s
+
+
+kubectl describe deployment source-ip-app
+
+		Name:                   source-ip-app
+		Namespace:              default
+		CreationTimestamp:      Sun, 19 Apr 2020 01:16:59 -0400
+		Labels:                 app=source-ip-app
+		Annotations:            deployment.kubernetes.io/revision=1
+		Selector:               app=source-ip-app
+		Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+		StrategyType:           RollingUpdate
+		MinReadySeconds:        0
+		RollingUpdateStrategy:  1 max unavailable, 1 max surge
+		Pod Template:
+		  Labels:  app=source-ip-app
+		  Containers:
+		   echoserver:
+			Image:        k8s.gcr.io/echoserver:1.4
+			Port:         <none>
+			Host Port:    <none>
+			Environment:  <none>
+			Mounts:       <none>
+		  Volumes:        <none>
+		Conditions:
+		  Type           Status  Reason
+		  ----           ------  ------
+		  Available      True    MinimumReplicasAvailable
+		OldReplicaSets:  <none>
+		NewReplicaSet:   source-ip-app-859bcbdf84 (1/1 replicas created)
+		Events:
+		  Type    Reason             Age   From                   Message
+		  ----    ------             ----  ----                   -------
+		  Normal  ScalingReplicaSet  52s   deployment-controller  Scaled up replica set source-ip-app-859bcbdf84 to 1
+
+
+kubectl expose deployment source-ip-app --name=clusterip --port=80 --target-port=8080
+
+kubectl expose deployment source-ip-app --name=nodeport --port=80 --target-port=8080 --type=NodePort
+
+kubectl expose deployment source-ip-app --name=loadbalancer --port=80 --target-port=8080 --type=LoadBalancer
+
+		C:\Users\nagen\Documents\NAGENDRA\git_code_base\InfiniAI\aws-infra-terraform\aws-eks-infra>kubectl expose deployment source-ip-app --name=clusterip --port=80 --target-port=8080
+		service "clusterip" exposed
+
+		C:\Users\nagen\Documents\NAGENDRA\git_code_base\InfiniAI\aws-infra-terraform\aws-eks-infra>kubectl expose deployment source-ip-app --name=nodeport --port=80 --target-port=8080 --type=NodePort
+		service "nodeport" exposed
+		C:\Users\nagen\Documents\NAGENDRA\git_code_base\InfiniAI\aws-infra-terraform\aws-eks-infra>kubectl expose deployment source-ip-app --name=loadbalancer --port=80 --target-port=8080 --type=LoadBalancer
+		service "loadbalancer" exposed
+
+kubectl get svc
+
+kubectl describe svc loadbalancer
+
+		C:\Users\nagen\Documents\NAGENDRA\git_code_base\InfiniAI\aws-infra-terraform\aws-eks-infra>kubectl describe svc loadbalancer
+		Name:                     loadbalancer
+		Namespace:                default
+		Labels:                   app=source-ip-app
+		Annotations:              <none>
+		Selector:                 app=source-ip-app
+		Type:                     LoadBalancer
+		IP:                       172.20.186.59
+		LoadBalancer Ingress:     ae955f54d21134a21b5865e3a33fc703-76360270.us-east-2.elb.amazonaws.com
+		Port:                     <unset>  80/TCP
+		TargetPort:               8080/TCP
+		NodePort:                 <unset>  30183/TCP
+		Endpoints:                10.0.0.131:8080
+		Session Affinity:         None
+		External Traffic Policy:  Cluster
+		Events:
+		  Type    Reason                Age   From                Message
+		  ----    ------                ----  ----                -------
+		  Normal  EnsuringLoadBalancer  15s   service-controller  Ensuring load balancer
+		  Normal  EnsuredLoadBalancer   13s   service-controller  Ensured load balancer
+
+curl external ip(load balancer ingress)		  
+curl ae955f54d21134a21b5865e3a33fc703-76360270.us-east-2.elb.amazonaws.com
+
+		C:\Users\nagen\Documents\NAGENDRA\git_code_base\InfiniAI\aws-infra-terraform\aws-eks-infra>curl ae955f54d21134a21b5865e3a33fc703-76360270.us-east-2.elb.amazonaws.com
+		CLIENT VALUES:
+		client_address=10.0.1.45
+		command=GET
+		real path=/
+		query=nil
+		request_version=1.1
+		request_uri=http://ae955f54d21134a21b5865e3a33fc703-76360270.us-east-2.elb.amazonaws.com:8080/
+
+		SERVER VALUES:
+		server_version=nginx: 1.10.0 - lua: 10001
+
+		HEADERS RECEIVED:
+		accept=*/*
+		host=ae955f54d21134a21b5865e3a33fc703-76360270.us-east-2.elb.amazonaws.com
+		user-agent=curl/7.55.1
+		BODY:
+		-no body in request-
+		C:\Users\nagen\Documents\NAGENDRA\git_code_base\InfiniAI\aws-infra-terraform\aws-eks-infra>curl ae955f54d21134a21b5865e3a33fc703-76360270.us-east-2.elb.amazonaws.com
+		CLIENT VALUES:
+		client_address=10.0.1.45
+		command=GET
+		real path=/
+		query=nil
+		request_version=1.1
+		request_uri=http://ae955f54d21134a21b5865e3a33fc703-76360270.us-east-2.elb.amazonaws.com:8080/
+
+		SERVER VALUES:
+		server_version=nginx: 1.10.0 - lua: 10001
+
+		HEADERS RECEIVED:
+		accept=*/*
+		host=ae955f54d21134a21b5865e3a33fc703-76360270.us-east-2.elb.amazonaws.com
+		user-agent=curl/7.55.1
+		BODY:
+		-no body in request-
+
+######
+Below error occurs when there is partial destroy of infrastructure and if we have deleted associations and subnets manually.
+we have to change the count = 2 to 
+count = length(aws_subnet.infisubnet)
+
+
+
+Error: Invalid index
+
+  on vpc.tf line 51, in resource "aws_route_table_association" "eks-rta":
+  51:   subnet_id      = aws_subnet.infisubnet.*.id[count.index]
+    |----------------
+    | aws_subnet.infisubnet is empty tuple
+    | count.index is 1
+
+The given key does not identify an element in this collection value.
+
+
+Error: Invalid index
+
+  on vpc.tf line 51, in resource "aws_route_table_association" "eks-rta":
+  51:   subnet_id      = aws_subnet.infisubnet.*.id[count.index]
+    |----------------
+    | aws_subnet.infisubnet is empty tuple
+    | count.index is 0
+
+The given key does not identify an element in this collection value.
+
+
+count = length(aws_subnet.infisubnet)
