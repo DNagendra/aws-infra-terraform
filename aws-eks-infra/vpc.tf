@@ -46,7 +46,7 @@ resource "aws_route_table" "eks-rt" {
 }
 
 resource "aws_route_table_association" "eks-rta" {
-  count = 2
+  count = length(aws_subnet.infisubnet)
 
   subnet_id      = aws_subnet.infisubnet.*.id[count.index]
   route_table_id = aws_route_table.eks-rt.id

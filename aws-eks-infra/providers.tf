@@ -3,7 +3,7 @@
 #
 
 provider "aws" {
-  region  = "us-east-2"
+  region  = var.aws_region
   version = ">= 2.38.0"
 }
 
