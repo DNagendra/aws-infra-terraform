@@ -7,7 +7,7 @@
 #
 
 resource "aws_vpc" "infi-vpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = var.vpc_cidr
 
   tags = map(
     "Name", "terraform-eks-infi-node",
@@ -15,17 +15,18 @@ resource "aws_vpc" "infi-vpc" {
   )
 }
 
-resource "aws_subnet" "infisubnet" {
-  count = 2
-
-  availability_zone = data.aws_availability_zones.available.names[count.index]
-  cidr_block        = "10.0.${count.index}.0/24"
+resource "aws_subnet" "subnets" {
+  count = length(data.aws_availability_zones.azs.names)
+  availability_zone = element(data.aws_availability_zones.azs.names,count.index)
+  cidr_block        = element(var.subnet_cidr,count.index)
   vpc_id            = aws_vpc.infi-vpc.id
+  map_public_ip_on_launch = true
 
-  tags = map(
-    "Name", "terraform-eks-infi-node",
-    "kubernetes.io/cluster/${var.cluster-name}", "shared",
-  )
+  tags = {
+    Name = "subnet-${count.index+1}"
+    Name = "terraform-eks-cluster"
+      "kubernetes.io/cluster/${var.cluster-name}" = "shared"
+  }
 }
 
 resource "aws_internet_gateway" "eks-ig" {
@@ -46,8 +47,8 @@ resource "aws_route_table" "eks-rt" {
 }
 
 resource "aws_route_table_association" "eks-rta" {
-  count = length(aws_subnet.infisubnet)
+  count = length(aws_subnet.subnets)
 
-  subnet_id      = aws_subnet.infisubnet.*.id[count.index]
+  subnet_id      = aws_subnet.subnets.*.id[count.index]
   route_table_id = aws_route_table.eks-rt.id
 }
